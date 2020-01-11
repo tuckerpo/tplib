@@ -1,178 +1,142 @@
 #pragma once
 #include <utility>
+#include <cstddef>
 
 namespace TP {
 
-/**
- * @brief Templated SinglyLinkedList
- * @details [long description]
- * 
- * @tparam T [description]
- */
 template<typename T>
 class SinglyLinkedList {
-private:
-
-	struct Node {
-		explicit Node(T&& val)
-			: value (std::move(val))
-		{
-		}
-		explicit Node(T& val)
-			: value (val)
-		{
-		}
-		T value;
-		Node* next { nullptr };
-	};
-
-	const Node* head() const { return m_head; }
-	Node* head() { return m_head; }
-	const Node* tail() const { return m_tail; }
-	Node* tail() { return m_tail; }
-
-	inline void set_head_and_tail_ptrs(Node* node) {
-		assert(node);
-		if (!m_head) {
-			m_head = node;
-			m_tail = node;
-			return;
-		}
-		m_tail->next = node;
-		m_tail = node;
-	}
-
-	Node* m_head { nullptr };
-	Node* m_tail { nullptr };
-	std::size_t m_size { 0 };
-
 public:
-	SinglyLinkedList() {}
-	virtual ~SinglyLinkedList() {
-		clear();
-	}
+    SinglyLinkedList() {}
+    virtual ~SinglyLinkedList() {
+        clear();
+    }
 
-	/**
-	 * @brief Check if a LinkedList instance is empty.
-	 * @details Checks if the head ptr is null, which implies the rest of the list is null.
-	 * @return True if the list is empty
-	 */
-	bool is_empty() const {
-		return head() == nullptr || m_size == 0;
-	}
+    void clear() {
+        for (Node* node = m_Head; node;) {
+           Node* next = node->next;
+           delete node;
+           node = next;
+        }
+        m_Head = nullptr;
+        m_Tail = nullptr;
+    }
 
-	/**
-	 * @brief Clear the linked list instance.
-	 * @details Iterates over non-null nodes and deletes them.
-	 */
-	void clear() {
-		for (Node* node = head(); node != nullptr; node++) {
-			Node* next = node->next;
-			delete node;
-			node = next;
-		}
-		m_head = m_tail = nullptr;
-		m_size = 0;
-	}
+    std::size_t size_linear() const {
+        std::size_t size;
+        for (Node* node = m_Head; node; node = node->next) {
+            ++size;
+        }
+        return size;
+    }
 
-	/**
-	 * @brief Append a new node with value (value) passed by const ref.
-	 * @details Appends a new node with value (value) passed by const ref.
-	 * 
-	 * @param value The value to append to the list
-	 */
-	void append(const T& value) {
-		Node* node = new Node(value);
-		set_head_and_tail_ptrs(node);
-		++m_size;
-	}
+    std::size_t size() const {
+        return m_Size;
+    }
 
-	/**
-	 * @brief Append a new node with value (value); this consumes value, caller beware!
-	 * @details rvalue ref append
-	 * 
-	 * @param value Value to append
-	 */
-	void append(T&& value) {
-		Node* node = new Node(std::move(value));
-		set_head_and_tail_ptrs(node);
-		++m_size;
-	}
+    bool is_empty() {
+        return m_Size > 0;
+    }
 
-	/**
-	 * @brief Linear search for an element
-	 * 
-	 * @param value value to search for
-	 * @return True if value was found in this LL instance
-	 */
-	bool contains(const T& value) const {
-		for (Node* node = head(); node != nullptr; node++) {
-			if (node->value == value)
-				return true;
-		}
-		return false;
-	}
+    T& first() {
+        return head()->value;
+    }
 
-	/**
-	 * @brief Traverse the list for size
-	 * @details Linear traversal
-	 * @return Size (number of elements) in this LL instance
-	 */
-	std::size_t size_slow() const {
-		std::size_t size {};
-		for (Node* node = head(); node != nullptr;) {
-			++size;
-		}
-		return size;
-	}
+    const T& first() const {
+        return head()->value;
+    }
 
-	/**
-	 * @brief Return the size of the LL
-	 * @details Return member m_size
-	 * @return Size (number of elements) in this LL instance
-	 */
-	std::size_t size() const {
-		return m_size;
-	}
+    T& last() {
+        return tail()->value;
+    }
 
-	/**
-	 * @brief Return the value held by the head element
-	 * @return T value held by head ptr
-	 */
-	T& first() {
-		return head()->value;
-	}
+    const T& last() const {
+        return tail()->value;
+    }
 
-	const T& first() const {
-		return head()->value;
-	}
+    T pop_first() {
+        Node* old_head = m_Head;
+        T value = std::move(first());
+        if (m_Tail == m_Head) {
+            m_Tail = nullptr;
+        }
+        m_Head = m_Head->next;
+        delete old_head;
+        return value;
+    }
 
-	T& last() {
-		return last()->value;
-	}
+    void append(const T& value) {
+        Node* node = new Node(value);
+        if (!m_Head) {
+            m_Head = node;
+            m_Tail = node;
+            return;
+        }
+        m_Tail->next = node;
+        m_Tail = node;
+    }
 
-	const T& last() const {
-		return last()->value;
-	}
+    void append(T&& value) {
+        Node* node = new Node(std::move(value));
+        if (!m_Head) {
+            m_Head = node;
+            m_Tail = node;
+            return;
+        }
+        m_Tail->next = node;
+        m_Tail = node;
+    }
 
-	/**
-	 * @brief Consume the first element of the LL
-	 * @details std::move the value held by the head ptr, delete the head ptr
-	 * @return The moved value from the head_ptr
-	 */
-	T pop_first() {
-		// TODO: implement a pop_last(). will be linear as m_tail doesn't know who it's previous node is.
-		Node* prev = m_head;
-		T value = std::move(first());
-		if (m_tail == m_head)
-			m_tail = nullptr;
-		m_head = m_head->next;
-		delete prev;
-		return value;
-	}
+    bool contains(const T& value) {
+        for (Node* node = m_Head; node; node = node->next) {
+            if (node->data == value) {
+                return true;
+            }
+        }
+        return false;
+    }
 
+    template<typename FinderFunc>
+    bool find(FinderFunc finderfn) {
+        for (Node* node = m_Head; node; node = node->next) {
+            if (finderfn(node->data)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-}; // SinglyLinkedList
+    template<typename Func>
+    void for_each_value(Func fn) {
+        for (Node* node = m_Head; node; node = node->next) {
+            fn(node->data);
+        }
+    }
 
+    template<typename Func>
+    void for_each_node(Func fn) {
+        for (Node *node = m_Head; node; node = node->next) {
+            fn(node);
+        }
+    }
+
+private:
+    struct Node {
+        explicit Node(T& val)
+            : data (val) {}
+        explicit Node(T&& val)
+            : data (std::move(val)) {}
+        T data;
+        Node *next {nullptr};
+    };
+
+    Node* m_Head {nullptr};
+    Node* m_Tail {nullptr};
+    const Node* head() const { return m_Head; }
+    Node* head() { return m_Head; }
+    const Node* tail() const { return m_Tail; }
+    Node* tail() { return m_Tail; }
+    std::size_t m_Size { 0 };
+};
 
 }; // namespace TP
